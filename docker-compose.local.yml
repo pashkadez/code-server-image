@@ -1,10 +1,9 @@
 services:
   code-server:
-    image: ghcr.io/pashkadez/code-server-vsc:latest
-    # Uncomment to build locally instead of using pre-built image
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
+    # Build locally instead of using pre-built image
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: code-server
     restart: unless-stopped
     ports:
@@ -21,15 +20,6 @@ services:
       - code-server-data:/home/coder/.config
       # Mount your project directory
       - ./project:/home/coder/project
-    # Optional: Add resource limits
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '2'
-    #       memory: 2G
-    #     reservations:
-    #       cpus: '1'
-    #       memory: 1G
 
 volumes:
   code-server-config:
