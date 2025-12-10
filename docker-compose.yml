@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  code-server:
+    image: ghcr.io/pashkadez/code-server-vsc:latest
+    # Uncomment to build locally instead of using pre-built image
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    container_name: code-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Change these passwords for production use
+      - PASSWORD=changeme
+      - SUDO_PASSWORD=changeme
+      # Optional: Set timezone
+      - TZ=UTC
+    volumes:
+      # Persist user data and extensions
+      - code-server-config:/home/coder/.local/share/code-server
+      - code-server-data:/home/coder/.config
+      # Mount your project directory
+      - ./project:/home/coder/project
+    # Optional: Add resource limits
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 2G
+    #     reservations:
+    #       cpus: '1'
+    #       memory: 1G
+
+volumes:
+  code-server-config:
+    driver: local
+  code-server-data:
+    driver: local

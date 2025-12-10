@@ -1,0 +1,152 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: code-server
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: code-server-secret
+  namespace: code-server
+type: Opaque
+stringData:
+  password: "changeme"
+  sudo-password: "changeme"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: code-server-data
+  namespace: code-server
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: code-server-config
+  namespace: code-server
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-server
+  namespace: code-server
+  labels:
+    app: code-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code-server
+  template:
+    metadata:
+      labels:
+        app: code-server
+    spec:
+      containers:
+      - name: code-server
+        image: ghcr.io/pashkadez/code-server-image:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: code-server-secret
+              key: password
+        - name: SUDO_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: code-server-secret
+              key: sudo-password
+        - name: TZ
+          value: "UTC"
+        volumeMounts:
+        - name: data
+          mountPath: /home/coder/project
+        - name: config
+          mountPath: /home/coder/.local/share/code-server
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: code-server-data
+      - name: config
+        persistentVolumeClaim:
+          claimName: code-server-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-server
+  namespace: code-server
+  labels:
+    app: code-server
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: code-server
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: code-server
+  namespace: code-server
+  annotations:
+    # Uncomment and configure for your ingress controller
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  # Uncomment and configure TLS if needed
+  # tls:
+  # - hosts:
+  #   - code-server.example.com
+  #   secretName: code-server-tls
+  rules:
+  - host: code-server.example.com  # Change this to your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: code-server
+            port:
+              number: 8080
