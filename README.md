@@ -13,6 +13,26 @@ A Docker image for [code-server](https://github.com/coder/code-server) (VS Code 
 
 ## Quick Start
 
+### One-Command Setup (Recommended)
+
+For the fastest way to get started, use our quick start script:
+
+```bash
+# Clone the repository
+git clone https://github.com/pashkadez/code-server-image.git
+cd code-server-image
+
+# Run the quick start script
+./start.sh
+```
+
+The script will:
+- ✅ Check Docker installation
+- ✅ Pull the latest image
+- ✅ Set up your project directory
+- ✅ Start code-server with your chosen password and port
+- ✅ Provide you with the access URL
+
 ### Prerequisites
 
 - Docker installed on your system

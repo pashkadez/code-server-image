@@ -23,8 +23,7 @@ RUN mkdir -p /home/coder/.local/share/code-server && \
 
 # Configure code-server to use official VSC marketplace
 # This is the key configuration to enable GitHub Copilot and other VSC extensions
-RUN mkdir -p /home/coder/.local/share/code-server && \
-    echo '{\n\
+RUN echo '{\n\
   "extensions": {\n\
     "marketplace": {\n\
       "serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery",\n\
