@@ -49,7 +49,7 @@ The script will:
 # Create a project directory
 mkdir -p ~/code-server-project
 
-# Run code-server
+# Run code-server with proper volume mounts for extension persistence
 docker run -d \
   --name code-server \
   -p 8080:8080 \
@@ -60,6 +60,8 @@ docker run -d \
   -v code-server-data:/home/coder/.config \
   ghcr.io/pashkadez/code-server-image:latest
 ```
+
+> **⚠️ Important**: The volume mounts `-v code-server-config:/home/coder/.local/share/code-server` and `-v code-server-data:/home/coder/.config` are **required** to persist your installed extensions and settings across container restarts.
 
 #### Building Locally
 
@@ -89,7 +91,17 @@ Access code-server at `http://localhost:8080` and login with your configured pas
 
 #### Using Pre-built Image
 
-1. Create a `docker-compose.yml` file:
+1. Use the example configuration file (recommended):
+
+```bash
+# Copy the example configuration
+cp docker-compose.example.yml docker-compose.yml
+
+# Edit the configuration to set your password and preferences
+nano docker-compose.yml  # or use your preferred editor
+```
+
+Or create a `docker-compose.yml` file manually:
 
 ```yaml
 version: '3.8'
@@ -106,6 +118,7 @@ services:
       - SUDO_PASSWORD=changeme
       - TZ=UTC
     volumes:
+      # CRITICAL: These paths are required for extension persistence
       - code-server-config:/home/coder/.local/share/code-server
       - code-server-data:/home/coder/.config
       - ./project:/home/coder/project
@@ -120,6 +133,8 @@ volumes:
 ```bash
 docker-compose up -d
 ```
+
+> **💡 Tip**: See `docker-compose.example.yml` for a fully documented configuration with all available options and detailed explanations.
 
 #### Using Local Build
 
@@ -309,11 +324,34 @@ resources:
 
 ### Volume Mounts
 
-| Path | Purpose |
-|------|---------|
-| `/home/coder/project` | Your workspace/project files |
-| `/home/coder/.local/share/code-server` | Extensions and code-server configuration |
-| `/home/coder/.config` | User configuration data |
+⚠️ **IMPORTANT**: To persist extensions and settings across container restarts, you **must** mount these specific paths:
+
+| Path | Purpose | Required for Extensions |
+|------|---------|------------------------|
+| `/home/coder/project` | Your workspace/project files | No |
+| `/home/coder/.local/share/code-server` | **Extensions and code-server configuration** | **YES** ✓ |
+| `/home/coder/.config` | User configuration data | **YES** ✓ |
+
+**Example volume configuration:**
+```yaml
+volumes:
+  # Named volumes (recommended for extensions persistence)
+  - code-server-config:/home/coder/.local/share/code-server
+  - code-server-data:/home/coder/.config
+  # Bind mount for your project files
+  - ./project:/home/coder/project
+```
+
+**Or using bind mounts:**
+```yaml
+volumes:
+  # Bind mounts (use absolute paths)
+  - /home/user/code-server/config:/home/coder/.local/share/code-server
+  - /home/user/code-server/data:/home/coder/.config
+  - /home/user/code-server/project:/home/coder/project
+```
+
+❌ **Common Mistake**: Mounting to `/config` instead of `/home/coder/.local/share/code-server` will NOT persist extensions!
 
 ## Installing Extensions
 
@@ -349,6 +387,82 @@ Thanks to the VSC marketplace configuration, you can install any extension avail
 5. **Secrets Management**: Use Kubernetes secrets or Docker secrets for sensitive data
 
 ## Troubleshooting
+
+### Extensions Not Persisting After Restart
+
+If your installed extensions disappear after restarting the container, this is almost always due to incorrect volume mounts.
+
+**Problem**: Extensions are stored in `/home/coder/.local/share/code-server/extensions` but your volume is mounted to the wrong path.
+
+**Solution**: Ensure you have the correct volume mounts:
+
+```yaml
+volumes:
+  # CORRECT - This will persist extensions
+  - code-server-config:/home/coder/.local/share/code-server
+  - code-server-data:/home/coder/.config
+  - ./project:/home/coder/project
+```
+
+**Common mistakes to avoid:**
+```yaml
+# ❌ WRONG - Mounting to /config instead of /home/coder/.local/share/code-server
+- /home/user/config:/config
+
+# ❌ WRONG - Only mounting workspace without config directories
+- /home/user/workspace:/home/coder/project
+
+# ✓ CORRECT - Using named Docker volumes (recommended)
+- code-server-config:/home/coder/.local/share/code-server
+- code-server-data:/home/coder/.config
+
+# ✓ CORRECT - Using bind mounts with correct paths
+- /home/user/code-server-config:/home/coder/.local/share/code-server
+- /home/user/code-server-data:/home/coder/.config
+```
+
+**To verify your extensions are being persisted:**
+
+1. Install an extension in code-server
+2. Check if the extension files are in the mounted volume:
+   ```bash
+   # For named volumes
+   docker volume inspect code-server-config
+   
+   # For bind mounts
+   ls -la /home/user/code-server-config/extensions
+   ```
+3. Restart the container:
+   ```bash
+   docker restart code-server
+   ```
+4. The extension should still be installed after restart
+
+**To migrate from incorrect configuration:**
+
+If you've been using incorrect volume mounts and want to keep your extensions:
+
+1. Install your extensions with the OLD configuration
+2. Copy the extensions from the container:
+   ```bash
+   docker cp code-server:/home/coder/.local/share/code-server /home/user/code-server-backup
+   ```
+3. Stop and remove the container:
+   ```bash
+   docker stop code-server
+   docker rm code-server
+   ```
+4. Update your docker-compose.yml with correct volume mounts
+5. Restore the extensions:
+   ```bash
+   # If using bind mounts
+   cp -r /home/user/code-server-backup/* /home/user/code-server-config/
+   
+   # If using named volumes, start the container first, then:
+   docker cp /home/user/code-server-backup/. code-server:/home/coder/.local/share/code-server/
+   docker exec -u root code-server chown -R coder:coder /home/coder/.local/share/code-server
+   ```
+6. Restart the container
 
 ### Cannot Install Extensions
 

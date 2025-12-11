@@ -1,0 +1,117 @@
+# Example Docker Compose configuration for code-server
+# This file demonstrates the CORRECT way to configure volumes for extension persistence
+
+version: '3.8'
+
+services:
+  code-server:
+    image: ghcr.io/pashkadez/code-server-image:latest
+    container_name: code-server
+    restart: unless-stopped
+    ports:
+      # Map host port 8080 to container port 8080
+      # Change the first number to use a different port on your host
+      - "8080:8080"
+    environment:
+      # IMPORTANT: Change these passwords for production use!
+      - PASSWORD=changeme
+      - SUDO_PASSWORD=changeme
+      # Optional: Set your timezone (e.g., America/New_York, Europe/London, Asia/Tokyo)
+      - TZ=UTC
+      # Optional: Set user/group IDs to match your host user
+      # Uncomment and set to your host user's UID/GID for better permissions
+      # - PUID=1000
+      # - PGID=1000
+    volumes:
+      # ============================================================================
+      # CRITICAL: These volume mounts are REQUIRED for extension persistence
+      # ============================================================================
+      
+      # Option 1: Using named Docker volumes (RECOMMENDED)
+      # This is the easiest and most reliable method
+      - code-server-config:/home/coder/.local/share/code-server
+      - code-server-data:/home/coder/.config
+      
+      # Option 2: Using bind mounts (alternative)
+      # Uncomment the lines below and comment out the named volumes above
+      # Make sure to use ABSOLUTE paths and create the directories first:
+      # mkdir -p ~/code-server/config ~/code-server/data
+      # - /home/user/code-server/config:/home/coder/.local/share/code-server
+      # - /home/user/code-server/data:/home/coder/.config
+      
+      # ============================================================================
+      # Project/workspace directory
+      # ============================================================================
+      # This is where your code files will be stored
+      # You can use either a named volume or a bind mount
+      
+      # Option 1: Named volume
+      - code-server-project:/home/coder/project
+      
+      # Option 2: Bind mount to a specific directory on your host
+      # Uncomment the line below and comment out the named volume above
+      # - ./project:/home/coder/project
+      # - /home/user/my-projects:/home/coder/project
+      
+    # Optional: Resource limits to prevent code-server from using too much memory/CPU
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 2G
+    #     reservations:
+    #       cpus: '1'
+    #       memory: 1G
+
+# ============================================================================
+# Volume definitions for named volumes
+# ============================================================================
+# These are only needed if you're using named volumes (Option 1 above)
+volumes:
+  code-server-config:
+    driver: local
+    # Optional: Specify a custom location for the volume data
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /path/to/your/config
+  
+  code-server-data:
+    driver: local
+    # Optional: Specify a custom location for the volume data
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /path/to/your/data
+  
+  code-server-project:
+    driver: local
+    # Optional: Specify a custom location for the volume data
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /path/to/your/project
+
+# ============================================================================
+# Quick Start Instructions
+# ============================================================================
+# 1. Copy this file to docker-compose.yml
+#    cp docker-compose.example.yml docker-compose.yml
+#
+# 2. Edit docker-compose.yml and change:
+#    - PASSWORD and SUDO_PASSWORD to secure values
+#    - Port mapping if 8080 is already in use
+#    - TZ to your timezone
+#    - Volume paths if using bind mounts
+#
+# 3. Start code-server:
+#    docker-compose up -d
+#
+# 4. Access code-server at http://localhost:8080
+#
+# 5. Install extensions - they will persist across restarts!
+#
+# To stop: docker-compose down
+# To view logs: docker-compose logs -f
+# To restart: docker-compose restart
+# ============================================================================
