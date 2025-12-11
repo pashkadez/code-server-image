@@ -12,10 +12,17 @@ mkdir -p /home/coder/.local/share/code-server
 mkdir -p /home/coder/.config
 mkdir -p /home/coder/project
 
-# Fix ownership
-chown -R coder:coder /home/coder/.local/share/code-server
-chown -R coder:coder /home/coder/.config
-chown -R coder:coder /home/coder/project
+# Fix ownership only if needed (check directory ownership)
+# This avoids slow recursive chown on large directory trees
+if [ "$(stat -c '%U' /home/coder/.local/share/code-server)" != "coder" ]; then
+    chown -R coder:coder /home/coder/.local/share/code-server
+fi
+if [ "$(stat -c '%U' /home/coder/.config)" != "coder" ]; then
+    chown -R coder:coder /home/coder/.config
+fi
+if [ "$(stat -c '%U' /home/coder/project)" != "coder" ]; then
+    chown -R coder:coder /home/coder/project
+fi
 
 # Restore marketplace configuration if it doesn't exist
 if [ ! -f "/home/coder/.local/share/code-server/coder.json" ]; then
