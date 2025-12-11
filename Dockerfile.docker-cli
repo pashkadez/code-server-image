@@ -24,9 +24,14 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Add coder user to docker group
-# Note: The GID should match your host's docker group GID
-# You may need to adjust this based on your host system
-RUN groupadd -g 999 docker || groupmod -g 999 docker || true && \
+# Note: The GID (999) should match your host's docker group GID for proper permissions
+# To find your host's docker group GID, run: getent group docker | cut -d: -f3
+# If your host uses a different GID, you can:
+# 1. Build with a custom GID: docker build --build-arg DOCKER_GID=$(getent group docker | cut -d: -f3) ...
+# 2. Or modify the RUN command below to use your specific GID
+# The || true ensures the command succeeds even if the group already exists
+ARG DOCKER_GID=999
+RUN groupadd -g ${DOCKER_GID} docker || groupmod -g ${DOCKER_GID} docker || true && \
     usermod -aG docker coder
 
 USER coder
@@ -34,6 +39,11 @@ USER coder
 # Usage:
 # 1. Build this image:
 #    docker build -f Dockerfile.docker-cli -t code-server-with-docker .
+#
+#    To match your host's docker group GID (recommended):
+#    docker build -f Dockerfile.docker-cli \
+#      --build-arg DOCKER_GID=$(getent group docker | cut -d: -f3) \
+#      -t code-server-with-docker .
 #
 # 2. Run with Docker socket mounted:
 #    docker run -d \

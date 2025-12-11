@@ -613,6 +613,11 @@ A complete example Dockerfile is provided in the repository as `Dockerfile.docke
 # Build the image with Docker CLI support
 docker build -f Dockerfile.docker-cli -t code-server-with-docker .
 
+# Or match your host's docker group GID (recommended for better permissions):
+docker build -f Dockerfile.docker-cli \
+  --build-arg DOCKER_GID=$(getent group docker | cut -d: -f3) \
+  -t code-server-with-docker .
+
 # Run with Docker socket mounted
 docker run -d \
   --name code-server \
@@ -639,37 +644,15 @@ services:
       - ./project:/home/coder/project
 ```
 
-Alternatively, create your own custom Dockerfile:
+**Customization:**
 
-```dockerfile
-FROM ghcr.io/pashkadez/code-server-image:latest
-
-USER root
-
-# Install Docker CLI
-RUN apt-get update && \
-    apt-get install -y ca-certificates curl gnupg && \
-    install -m 0755 -d /etc/apt/keyrings && \
-    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
-    chmod a+r /etc/apt/keyrings/docker.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
-    apt-get update && \
-    apt-get install -y docker-ce-cli docker-compose-plugin && \
-    rm -rf /var/lib/apt/lists/*
-
-# Add coder user to docker group
-RUN groupadd -g 999 docker || groupmod -g 999 docker || true && \
-    usermod -aG docker coder
-
-USER coder
-```
-
-2. Build and run:
+If you need to customize the Docker group GID to match your host system, see the `Dockerfile.docker-cli` file which includes detailed comments about adjusting the GID. You can determine your host's docker group GID with:
 
 ```bash
-docker build -t code-server-with-docker .
-# Then run with -v /var/run/docker.sock:/var/run/docker.sock
+getent group docker | cut -d: -f3
 ```
+
+Then update the Dockerfile accordingly before building.
 
 After this setup, you can run Docker commands from code-server's integrated terminal (e.g., `docker ps`, `docker build`, `docker-compose up`, etc.).
 
