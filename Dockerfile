@@ -3,11 +3,12 @@ FROM codercom/code-server:latest
 # Switch to root to install dependencies and configure
 USER root
 
-# Install additional tools and dependencies
+# Install additional tools and dependencies including gosu for proper user switching
 RUN apt-get update && apt-get install -y \
     curl \
     git \
     sudo \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Create coder user with sudo privileges if it doesn't exist
@@ -45,12 +46,13 @@ RUN mkdir -p /usr/lib/code-server/lib/vscode && \
   }\n\
 }' > /usr/lib/code-server/lib/vscode/product.json
 
+# Copy entrypoint script
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Set environment variables
 ENV PASSWORD="changeme" \
     SUDO_PASSWORD="changeme"
-
-# Switch back to coder user
-USER coder
 
 # Set working directory
 WORKDIR /home/coder/project
@@ -58,5 +60,6 @@ WORKDIR /home/coder/project
 # Expose code-server port
 EXPOSE 8080
 
-# Start code-server
-CMD ["code-server", "--bind-addr", "0.0.0.0:8080", "--auth", "password", "."]
+# Use entrypoint script to fix permissions and start code-server
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["--bind-addr", "0.0.0.0:8080", "--auth", "password", "."]
