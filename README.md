@@ -512,6 +512,80 @@ kubectl logs -n code-server -l app=code-server
 kubectl get pvc -n code-server
 ```
 
+## Frequently Asked Questions (FAQ)
+
+### Q: Will my installed extensions persist after container restart?
+
+**A: Yes**, but **only if** you have the correct volume mounts configured. You need these two volume mounts:
+
+```yaml
+volumes:
+  - code-server-config:/home/coder/.local/share/code-server  # ← Stores extensions
+  - code-server-data:/home/coder/.config                      # ← Stores settings
+```
+
+Without these mounts, extensions will be lost when the container is restarted or recreated.
+
+### Q: I'm using `/config` as a mount point - will my extensions persist?
+
+**A: No**. Mounting to `/config` will **not** work. You must mount to `/home/coder/.local/share/code-server` for extensions to persist. See the [Extensions Not Persisting](#extensions-not-persisting-after-restart) troubleshooting section for the correct configuration.
+
+### Q: What's the difference between named volumes and bind mounts?
+
+**Named volumes** (recommended):
+```yaml
+volumes:
+  - code-server-config:/home/coder/.local/share/code-server
+```
+- Managed by Docker
+- Easier to use
+- Better for portability
+- Good for extension storage
+
+**Bind mounts**:
+```yaml
+volumes:
+  - /home/user/code-server-config:/home/coder/.local/share/code-server
+```
+- Maps to a specific host directory
+- Requires absolute paths
+- Good for project files you want to access from the host
+- Requires manual directory creation
+
+### Q: How do I check if my extensions are being persisted?
+
+1. Install an extension in code-server
+2. Restart the container: `docker restart code-server`
+3. Check if the extension is still there
+
+If extensions disappear, your volume mounts are incorrect.
+
+### Q: Can I use the same project directory from my host machine?
+
+**A: Yes!** That's exactly what the project mount is for:
+
+```yaml
+volumes:
+  - ./project:/home/coder/project           # Use relative path
+  # OR
+  - /home/user/my-code:/home/coder/project  # Use absolute path
+```
+
+The two config volumes should still use named volumes for best results.
+
+### Q: Do I need all three volume mounts?
+
+- `/home/coder/.local/share/code-server` - **Required** for extensions ✓
+- `/home/coder/.config` - **Required** for settings ✓  
+- `/home/coder/project` - Optional, but recommended for project files
+
+### Q: What happens if I don't mount the config directories?
+
+Your extensions and settings will be lost every time you:
+- Restart the container
+- Update the container
+- Recreate the container with `docker-compose up -d`
+
 ## Building Custom Images
 
 To build a custom image with additional tools:

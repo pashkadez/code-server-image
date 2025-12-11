@@ -1,6 +1,6 @@
 services:
   code-server:
-    image: ghcr.io/pashkadez/code-server-vsc:latest
+    image: ghcr.io/pashkadez/code-server-image:latest
     # Uncomment to build locally instead of using pre-built image
     # build:
     #   context: .
@@ -16,6 +16,7 @@ services:
       # Optional: Set timezone
       - TZ=UTC
     volumes:
+      # CRITICAL: These volume mounts are REQUIRED to persist extensions across restarts
       # Persist user data and extensions
       - code-server-config:/home/coder/.local/share/code-server
       - code-server-data:/home/coder/.config
