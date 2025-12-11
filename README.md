@@ -586,6 +586,101 @@ Your extensions and settings will be lost every time you:
 - Update the container
 - Recreate the container with `docker-compose up -d`
 
+### Q: Can I access the host's Docker daemon from within code-server?
+
+**A: Yes!** You can mount the Docker socket to run Docker commands from code-server's terminal.
+
+**⚠️ Security Warning**: Mounting the Docker socket gives the container full access to your Docker daemon, which is equivalent to root access on the host. Only do this if you trust the code you'll be running.
+
+**Configuration:**
+
+```yaml
+services:
+  code-server:
+    image: ghcr.io/pashkadez/code-server-image:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Mount Docker socket
+      - code-server-config:/home/coder/.local/share/code-server
+      - code-server-data:/home/coder/.config
+      - ./project:/home/coder/project
+```
+
+**Additional setup required:**
+
+A complete example Dockerfile is provided in the repository as `Dockerfile.docker-cli`. You can use it directly:
+
+```bash
+# Build the image with Docker CLI support
+docker build -f Dockerfile.docker-cli -t code-server-with-docker .
+
+# Run with Docker socket mounted
+docker run -d \
+  --name code-server \
+  -p 8080:8080 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v code-server-config:/home/coder/.local/share/code-server \
+  -v code-server-data:/home/coder/.config \
+  -v ./project:/home/coder/project \
+  code-server-with-docker
+```
+
+Or with Docker Compose - update your `docker-compose.yml`:
+
+```yaml
+services:
+  code-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.docker-cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - code-server-config:/home/coder/.local/share/code-server
+      - code-server-data:/home/coder/.config
+      - ./project:/home/coder/project
+```
+
+Alternatively, create your own custom Dockerfile:
+
+```dockerfile
+FROM ghcr.io/pashkadez/code-server-image:latest
+
+USER root
+
+# Install Docker CLI
+RUN apt-get update && \
+    apt-get install -y ca-certificates curl gnupg && \
+    install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    chmod a+r /etc/apt/keyrings/docker.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y docker-ce-cli docker-compose-plugin && \
+    rm -rf /var/lib/apt/lists/*
+
+# Add coder user to docker group
+RUN groupadd -g 999 docker || groupmod -g 999 docker || true && \
+    usermod -aG docker coder
+
+USER coder
+```
+
+2. Build and run:
+
+```bash
+docker build -t code-server-with-docker .
+# Then run with -v /var/run/docker.sock:/var/run/docker.sock
+```
+
+After this setup, you can run Docker commands from code-server's integrated terminal (e.g., `docker ps`, `docker build`, `docker-compose up`, etc.).
+
+**Alternative - SSH into host:**
+
+If you want full host terminal access via SSH:
+
+1. Configure SSH access to your host machine
+2. Use the "Remote - SSH" extension in code-server to connect to localhost or your host's IP
+3. This provides complete host terminal access without security risks of Docker socket mounting
+
 ## Building Custom Images
 
 To build a custom image with additional tools:

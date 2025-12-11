@@ -1,0 +1,63 @@
+# Example Dockerfile for code-server with Docker CLI support
+# This allows running Docker commands from within code-server's terminal
+# when combined with mounting the Docker socket
+
+FROM ghcr.io/pashkadez/code-server-image:latest
+
+USER root
+
+# Install Docker CLI
+# This installs only the Docker client, not the Docker daemon
+RUN apt-get update && \
+    apt-get install -y \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release && \
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+      $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y docker-ce-cli docker-compose-plugin && \
+    rm -rf /var/lib/apt/lists/*
+
+# Add coder user to docker group
+# Note: The GID should match your host's docker group GID
+# You may need to adjust this based on your host system
+RUN groupadd -g 999 docker || groupmod -g 999 docker || true && \
+    usermod -aG docker coder
+
+USER coder
+
+# Usage:
+# 1. Build this image:
+#    docker build -f Dockerfile.docker-cli -t code-server-with-docker .
+#
+# 2. Run with Docker socket mounted:
+#    docker run -d \
+#      --name code-server \
+#      -p 8080:8080 \
+#      -v /var/run/docker.sock:/var/run/docker.sock \
+#      -v code-server-config:/home/coder/.local/share/code-server \
+#      -v code-server-data:/home/coder/.config \
+#      -v ./project:/home/coder/project \
+#      code-server-with-docker
+#
+# 3. Or use with docker-compose.yml:
+#    services:
+#      code-server:
+#        build:
+#          context: .
+#          dockerfile: Dockerfile.docker-cli
+#        volumes:
+#          - /var/run/docker.sock:/var/run/docker.sock
+#          - code-server-config:/home/coder/.local/share/code-server
+#          - code-server-data:/home/coder/.config
+#          - ./project:/home/coder/project
+#
+# Security Warning:
+# Mounting /var/run/docker.sock gives the container full access to your Docker
+# daemon, which is equivalent to root access on the host. Only use this if you
+# trust the code you'll be running in code-server.

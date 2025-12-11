@@ -53,6 +53,21 @@ services:
       # - ./project:/home/coder/project
       # - /home/user/my-projects:/home/coder/project
       
+      # ============================================================================
+      # ADVANCED: Docker socket for running Docker commands (OPTIONAL)
+      # ============================================================================
+      # WARNING: Mounting the Docker socket gives the container root access to your
+      # Docker daemon, which is equivalent to root access on the host.
+      # Only enable this if you need to run Docker commands from within code-server
+      # and you trust the code you'll be running.
+      #
+      # To use this feature:
+      # 1. Uncomment the line below to mount the Docker socket
+      # 2. Build a custom image that includes Docker CLI (see README FAQ section)
+      # 3. After setup, you can run Docker commands from code-server's terminal
+      #
+      # - /var/run/docker.sock:/var/run/docker.sock
+      
     # Optional: Resource limits to prevent code-server from using too much memory/CPU
     # deploy:
     #   resources:
