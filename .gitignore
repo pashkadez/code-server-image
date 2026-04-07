@@ -1,3 +1,6 @@
+# Git worktrees
+.worktrees/
+
 # Project directory (local development)
 project/
 
