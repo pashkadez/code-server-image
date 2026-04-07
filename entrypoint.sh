@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # Fix permissions for mounted volumes
 # This ensures that the coder user can write to these directories
