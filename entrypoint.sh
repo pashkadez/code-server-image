@@ -51,7 +51,8 @@ echo "Permissions fixed. Starting code-server..."
 # extensions whose engine requirement exceeds what is installed.
 VSCODE_ENGINE_MINOR=$(gosu coder code-server --version 2>/dev/null \
     | grep -oE 'Code [0-9]+\.[0-9]+' | grep -oE '[0-9]+\.[0-9]+$' \
-    | cut -d'.' -f2 || echo "0")
+    | cut -d'.' -f2 || true)
+VSCODE_ENGINE_MINOR="${VSCODE_ENGINE_MINOR:-0}"
 
 install_or_update_extension() {
     local publisher="$1"
@@ -81,6 +82,7 @@ install_or_update_extension() {
     else
         jq_filter="[.results[0].extensions[0].versions[] |
           select(.properties != null) |
+          select((.properties | map(select(.key == \"Microsoft.VisualStudio.Code.PreRelease\" and .value == \"true\")) | length) == 0) |
           select((.properties | map(select(.key == \"Microsoft.VisualStudio.Code.Engine\")) | first | .value // \"^1.0.0\") |
             ltrimstr(\"^\") | ltrimstr(\"~\") | split(\".\")[1] | tonumber <= ${engine_minor})
         ][0].version"
