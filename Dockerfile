@@ -1,4 +1,4 @@
-FROM codercom/code-server:latest
+FROM codercom/code-server:4.114.1
 
 # Switch to root to install dependencies and configure
 USER root
@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     git \
     sudo \
     gosu \
+    jq \
     && rm -rf /var/lib/apt/lists/*
 
 # Create coder user with sudo privileges if it doesn't exist
