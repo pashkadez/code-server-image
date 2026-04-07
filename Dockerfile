@@ -12,10 +12,9 @@ RUN apt-get update && apt-get install -y \
     jq \
     && rm -rf /var/lib/apt/lists/*
 
-# Create coder user with sudo privileges if it doesn't exist
+# Create coder user if it doesn't exist
 RUN if ! id -u coder > /dev/null 2>&1; then \
-    useradd -m -s /bin/bash coder && \
-    echo "coder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
+    useradd -m -s /bin/bash coder; \
     fi
 
 # Create necessary directories
@@ -51,9 +50,6 @@ RUN mkdir -p /usr/lib/code-server/lib/vscode && \
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Set environment variables
-ENV PASSWORD="changeme" \
-    SUDO_PASSWORD="changeme"
 
 # Set working directory
 WORKDIR /home/coder/project
