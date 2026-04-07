@@ -8,10 +8,14 @@ kind: Secret
 metadata:
   name: code-server-secret
   namespace: code-server
+  annotations:
+    # For homelab deployments: replace this Secret with an ExternalSecret
+    # referencing the onepassword-connect ClusterSecretStore.
+    # Example field mapping: op://homelab/code-server/password -> password
 type: Opaque
 stringData:
-  password: "changeme"
-  sudo-password: "changeme"
+  password: ""        # set before applying, or use ExternalSecret
+  sudo-password: ""   # set before applying, or use ExternalSecret
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -99,6 +103,11 @@ spec:
             port: 8080
           initialDelaySeconds: 10
           periodSeconds: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
       volumes:
       - name: data
         persistentVolumeClaim:
