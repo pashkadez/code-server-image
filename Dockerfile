@@ -50,7 +50,6 @@ RUN mkdir -p /usr/lib/code-server/lib/vscode && \
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-
 # Set working directory
 WORKDIR /home/coder/project
 
