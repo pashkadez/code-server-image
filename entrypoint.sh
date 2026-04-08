@@ -40,6 +40,13 @@ EOF
     chown coder:coder /home/coder/.local/share/code-server/coder.json
 fi
 
+# Configure sudo with password if SUDO_PASSWORD is provided
+if [ -n "${SUDO_PASSWORD:-}" ]; then
+    echo "coder:${SUDO_PASSWORD}" | chpasswd
+    echo "coder ALL=(ALL:ALL) ALL" > /etc/sudoers.d/coder
+    chmod 0440 /etc/sudoers.d/coder
+fi
+
 echo "Permissions fixed. Starting code-server..."
 
 # --- Managed extension installer ---
