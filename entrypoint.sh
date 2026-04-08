@@ -119,6 +119,17 @@ install_or_update_extension() {
         return 0
     fi
 
+    # Skip if installed version is newer than what the API returned
+    if [ -n "$installed_version" ]; then
+        local newer
+        newer=$(printf '%s\n%s\n' "$installed_version" "$latest_version" \
+            | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | tail -1)
+        if [ "$newer" = "$installed_version" ]; then
+            echo "Extension ${ext_id} installed (${installed_version}) is newer than marketplace (${latest_version}) — skipping."
+            return 0
+        fi
+    fi
+
     echo "Installing ${ext_id} ${latest_version} (was: ${installed_version:-not installed})..."
 
     local vsix_url="https://marketplace.visualstudio.com/_apis/public/gallery/publishers/${publisher}/vsextensions/${ext_name}/${latest_version}/vspackage"
