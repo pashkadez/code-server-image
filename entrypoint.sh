@@ -52,7 +52,7 @@ echo "Permissions fixed. Starting code-server..."
 VSCODE_ENGINE_MINOR=$(gosu coder code-server --version 2>/dev/null \
     | grep -oE 'Code [0-9]+\.[0-9]+' | grep -oE '[0-9]+\.[0-9]+$' \
     | cut -d'.' -f2 || true)
-VSCODE_ENGINE_MINOR="${VSCODE_ENGINE_MINOR:-0}"
+VSCODE_ENGINE_MINOR="${VSCODE_ENGINE_MINOR:-9999}"
 
 install_or_update_extension() {
     local publisher="$1"
