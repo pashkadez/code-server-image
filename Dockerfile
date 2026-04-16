@@ -1,4 +1,4 @@
-FROM codercom/code-server:4.114.1
+FROM codercom/code-server:4.116.0
 
 # Switch to root to install dependencies and configure
 USER root
