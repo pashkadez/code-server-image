@@ -46,6 +46,12 @@ RUN mkdir -p /usr/lib/code-server/lib/vscode && \
   }\n\
 }' > /usr/lib/code-server/lib/vscode/product.json
 
+# Remove fixuid — base image's entrypoint calls it, but our entrypoint
+# overrides that and uses gosu instead, so fixuid is never invoked.
+# It carries unfixed Go stdlib CVEs (CVE-2024-24790, CVE-2025-68121)
+# with no upstream release compiled against a patched toolchain.
+RUN rm -f /usr/local/bin/fixuid
+
 # Copy entrypoint script
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

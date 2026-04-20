@@ -1,0 +1,6 @@
+# CVE-2023-26114 — false positive
+# Trivy matches this against the package.json inside the code-server bundle
+# and reads the version field as "1.114.0", which is actually the bundled
+# VS Code engine version, not the code-server application version.
+# The actual code-server release (4.x) has been patched since 4.10.1.
+CVE-2023-26114
