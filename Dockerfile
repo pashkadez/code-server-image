@@ -34,17 +34,11 @@ RUN echo '{\n\
 }' > /home/coder/.local/share/code-server/coder.json && \
     chown -R coder:coder /home/coder/.local
 
-# Create product.json to enable VSC marketplace
-RUN mkdir -p /usr/lib/code-server/lib/vscode && \
-    echo '{\n\
-  "extensionsGallery": {\n\
-    "serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery",\n\
-    "itemUrl": "https://marketplace.visualstudio.com/items",\n\
-    "cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",\n\
-    "controlUrl": "",\n\
-    "recommendationsUrl": ""\n\
-  }\n\
-}' > /usr/lib/code-server/lib/vscode/product.json
+# Patch product.json to enable VSC marketplace — merge instead of replace
+# so fields added by newer code-server versions (e.g. builtInExtensionsEnabledWithAutoUpdates) are preserved
+RUN jq '. + {"extensionsGallery": {"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery", "itemUrl": "https://marketplace.visualstudio.com/items", "cacheUrl": "https://vscode.blob.core.windows.net/gallery/index", "controlUrl": "", "recommendationsUrl": ""}}' \
+    /usr/lib/code-server/lib/vscode/product.json > /tmp/product.json && \
+    mv /tmp/product.json /usr/lib/code-server/lib/vscode/product.json
 
 # Remove fixuid — base image's entrypoint calls it, but our entrypoint
 # overrides that and uses gosu instead, so fixuid is never invoked.
